@@ -49,13 +49,7 @@ dev = [
 ]
 
 [project.scripts]
-bookend-my-snippet = "bookend_my_snippet.__main__:main"
-
-[tool.setuptools]
-package-dir = {"" = "src"}
-
-[tool.setuptools.packages.find]
-where = ["src"]
+bookend-my-snippet = "bookend_my_snippet:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -74,7 +68,6 @@ extend-select = [
     "DTZ", # flake8-datetimez
     "E",   # pycodestyle errors
 #    "ERA", # eradicate
-    "EXE", # flake8-executable
     "F",   # pyflakes
     "FLY", # flynt
     "G",   # flake8-logging-format

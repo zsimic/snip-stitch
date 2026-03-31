@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 Add a snippet to a bash/zsh/... shell rc file
 """
@@ -239,5 +241,5 @@ def main():
     return shell_rc.run_update(force=args.force)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no covers
     sys.exit(main())
