@@ -1,0 +1,9 @@
+# example bashrc file
+alias ls='ls -FGh'
+# ---8<- my-test-app -- managed section, avoid editing
+local_bin=~/.local/bin
+if [[ $PATH != *"$local_bin"* && -d $1 ]]; then
+    export PATH=$local_bin:$PATH
+fi
+# -8<--- my-test-app --
+alias foo=~/bar

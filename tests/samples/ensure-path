@@ -1,0 +1,4 @@
+local_bin=~/.local/bin
+if [[ $PATH != *"$local_bin"* && -d $1 ]]; then
+    export PATH=$local_bin:$PATH
+fi
