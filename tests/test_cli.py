@@ -48,21 +48,21 @@ def test_cli(cli):
 
 def test_dryrun(cli):
     # Snippet given as positional arg
-    cli.run("-n", "testing", "my-bash.rc", "some\ncontent")
+    cli.run("-n", "testing", "my-bash.rc", "some\ncontent", "--end-comment", "peace")
     assert cli.succeeded
     expected = textwrap.dedent("""\
         [DRYRUN] Would update my-bash.rc, contents:
         # ---8<- testing -- managed section, avoid editing
         some
         content
-        # -8<--- testing --
+        # -8<--- testing -- peace
     """)
     assert cli.logged.stderr.contents() == expected
 
     # Multi-line comment is not accepted
-    # cli.run("-n", "testing", "my-bash.rc", "some\ncontent", "--start-comment", "multiple\n\nlines")
-    # assert cli.failed
-    # assert "Provide maximum one line of comment, got 3 lines:\nmultiple\n\nlines" in cli.logged.stderr.contents()
+    cli.run("-n", "testing", "my-bash.rc", "some\ncontent", "--start-comment", "multiple\n\nlines")
+    assert cli.failed
+    assert "Provide maximum one line for --start-comment, got 3 lines:\nmultiple\n\nlines" in cli.logged.stderr.contents()
 
 
 def test_samples(cli):

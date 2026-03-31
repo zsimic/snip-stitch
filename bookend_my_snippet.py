@@ -33,8 +33,6 @@ class ShellRc:
         self.given_snippet_contents = snippet_contents
         self.verbose = verbose
         self.target_path = os.path.expanduser(target_path)
-        self.target_contents = self.file_contents(self.target_path)
-        self.snippet_contents = self.resolved_snippet_contents(snippet_contents)
         self.comment_chars = Defaults.comment_chars
         self.snip_marker = Defaults.snip_marker
         self.start_comment = Defaults.start_comment
@@ -42,6 +40,8 @@ class ShellRc:
         self.before_insertion = []
         self.marked_contents = []
         self.after_insertion = []
+        self.target_contents = self.file_contents(self.target_path)
+        self.snippet_contents = self.resolved_snippet_contents(snippet_contents)
 
     def debug(self, message):
         if self.verbose:
@@ -53,6 +53,14 @@ class ShellRc:
             message (str): Message to log on stderr
         """
         print(message, file=sys.stderr)
+
+    def validate_comment(self, comment, option_name):
+        if comment:
+            comment = self.splitlines(comment)
+            if len(comment) > 1:
+                line_count = len(comment)
+                comment = "\n".join(comment)
+                sys.exit(f"Provide maximum one line for --{option_name}, got %s lines:\n%s" % (line_count, comment))
 
     def resolved_snippet_contents(self, snippet_contents):
         """
@@ -140,6 +148,8 @@ class ShellRc:
         Returns:
             (list[str]): Rendered snippet, optionally with the section marker
         """
+        self.validate_comment(self.start_comment, "start-comment")
+        self.validate_comment(self.end_comment, "end-comment")
         result = []
         if self.snippet_contents:
             if include_marker:
@@ -151,9 +161,11 @@ class ShellRc:
 
             result.extend(self.snippet_contents)
             if include_marker:
-                result.append(self.marker_end)
+                marker = self.marker_end
                 if self.end_comment:
                     marker += f" {self.end_comment}"
+
+                result.append(marker)
 
         return result
 

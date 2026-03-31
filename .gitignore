@@ -3,7 +3,7 @@
 \#*#
 .\#*
 .*cache
-.*lock
+*.lock
 .DS_Store*
 .*version
 .idea/

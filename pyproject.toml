@@ -67,7 +67,7 @@ extend-select = [
     "C90", # mccabe
     "DTZ", # flake8-datetimez
     "E",   # pycodestyle errors
-#    "ERA", # eradicate
+    "ERA", # eradicate
     "F",   # pyflakes
     "FLY", # flynt
     "G",   # flake8-logging-format
