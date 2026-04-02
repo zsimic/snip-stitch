@@ -18,6 +18,7 @@ Idempotently add, update, or remove managed snippets inside shell-like text file
 
 Installers love to append lines to your shell profile.
 Uninstallers... don't.
+
 ``snip-stitch`` fixes this by wrapping each snippet in marker lines, so future runs can find,
 update, or cleanly remove exactly that section -- and leave everything else alone.
 

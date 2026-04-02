@@ -1,8 +1,4 @@
-#!/usr/bin/env python3
-
 """Manage marked snippets in text files. Snip it in, stitch it out."""
-
-from __future__ import annotations
 
 import argparse
 import os

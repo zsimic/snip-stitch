@@ -10,7 +10,7 @@ name = "snip-stitch"
 dynamic = ["version"]
 description = "Idempotently manage marked snippets inside shell-like text files"
 readme = "README.rst"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE.txt"]
 authors = [
@@ -24,9 +24,6 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -50,7 +47,20 @@ dev = [
 [project.scripts]
 snip-stitch = "snip_stitch:main"
 
-[tool.pytest.ini_options]
+
+[tool.coverage.run]
+data_file = ".tox/.coverage"
+patch = ["subprocess"]
+sigterm = true
+
+[tool.coverage.xml]
+output = ".tox/test-reports/coverage.xml"
+
+[tool.coverage.html]
+directory = ".tox/test-reports/htmlcov"
+
+[tool.pytest]
+cache_dir = ".tox/pytest_cache"
 testpaths = ["tests"]
 
 [tool.ruff]
@@ -89,7 +99,7 @@ extend-select = [
     "W",   # pycodestyle warnings
 ]
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101"]  # Sigh `bandit` devs...
+"tests/**" = ["S101"]
 
 [tool.ruff.lint.isort]
 order-by-type = false

@@ -1,27 +1,23 @@
-# CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Commands
 
 ```bash
 # Run tests
-uvx --with tox-uv tox -e py
+tox
 
 # Run a single test by name
 uv run pytest -k test_dryrun
 
 # Run linter (check only)
-uvx --with tox-uv tox -e style
+tox -e style
 
 # Auto-fix linting/formatting
-uvx --with tox-uv tox -e reformat
+tox -e reformat
 
 # Run type checking
-uvx --with tox-uv tox -e typecheck
+tox -e typecheck
 
 # Validate README renders correctly for PyPI
-uvx --with tox-uv tox -e readme
+tox -e readme
 ```
 
 ## Architecture
