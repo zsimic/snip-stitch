@@ -1,157 +1,138 @@
 # snip-stitch
 
 Idempotently add, update, or remove managed snippets inside shell-like text files.
-Snip-stitch managed blocks into config files
 
-Example:
-```shell
-#- ---8<- nvm-installer -- managed section, avoid editing
-if [ -z "${NVM_DIR:-}" ]; then
-  export NVM_DIR="$HOME/.nvm"
-  [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-fi
-#- -8<--- nvm-installer --
+Installers love to append lines to your shell profile.
+Uninstallers... don't.
+`snip-stitch` fixes this by wrapping each snippet in marker lines, so future runs can find,
+update, or cleanly remove exactly that section -- and leave everything else alone.
 
-#- ---8<- brew -- managed section, avoid editing
-eval "$(brew shellenv)"
-#- -8<--- brew --
 ```
-
-Marker structure:
-```
-{empty_line_if_needed}
-{comment_chars} --{snip_marker} {tag} -- {start_comment}
-...
-{comment_chars} {snip_marker}-- {tag} -- {end_comment}
-{empty_line_if_needed}
-```
-
-Defaults (`tag` has no default, must be provided):
-```
-comment_chars = "#-"
-snip_marker = "-8<-"
-start_comment = "managed section, avoid editing"
-end_comment = ""
-```
-
-`tag` must be mostly alphanumeric, minimum 3 chars, max 32:
-```regexp
-[a-z][a-z0-9._-]{2,31}
-```
-
-`snip-stitch` is a tiny CLI for installers, dotfiles, and automation that need to own a
-small section of a file without clobbering the rest of it.
-
-Think:
-
-- shell installers that currently do `grep ... || echo ... >> ~/.zshrc`
-- dotfiles that need to manage one section of `~/.bashrc`, `~/.zprofile`, or `~/.ssh/config`
-- setup automation that wants predictable, testable behavior instead of ad-hoc shell glue
-
-The tool wraps the snippet it owns with marker lines, so future runs can update or remove exactly
-that section and leave everything else alone.
-
-> Idem-potent by design.
-
-# Motivation
-
-Appending lines blindly is easy to write and awkward to undo.
-
-`snip-stitch` aims to be the "do one thing well" tool for managed config snippets:
-
-- idempotent updates
-- explicit ownership through markers
-- removal without brittle `sed`/`grep` gymnastics
-- convenient snippet sources like file, raw text, or output of a command
-- an intentionally small and testable surface area
-
-## Examples
-
-Use a file as the source of truth:
-
-```bash
-uvx snip-stitch with-content ~/.bashrc sdkman-init.sh
-```
-
-Inject a one-liner snippet directly:
-
-```bash
-uvx snip-stitch rustup by-text ~/.profile \
-  '[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"'
-```
-
-Evaluate a command and inject its stdout:
-
-```bash
-uvx snip-stitch from-output ~/.zprofile brew-shellenv.zsh
-```
-
-Remove a section the tool previously managed:
-
-```bash
-uvx snip-stitch sdkman remove ~/.bashrc
-```
-
-## What It Manages
-
-Given this command:
-
-```bash
-uvx snip-stitch nvm ~/.zshrc file:nvm-profile.zsh
-```
-
-The file will end up containing a block like this:
-
-```text
-## -- Added by nvm -- DO NOT MODIFY THIS SECTION
+# ---8<- nvm -- managed section, avoid editing
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-## -- end of addition by nvm --
+# -8<--- nvm --
 ```
 
-If you run the same command again with different snippet contents but the same marker, the managed
-section is updated in place.
-
-## Supported Snippet Sources
-
-- Inline text: pass the snippet directly as a positional argument
-- `file:PATH`: read the snippet from a file
-- `eval:COMMAND`: run a shell command and use its stdout as the snippet
-- `--remove`: remove the managed section instead of adding or updating it
-
-Inline snippets also support `\n` escapes, which is handy when a caller cannot easily pass a
-literal multi-line argument.
-
-## Behavior Guarantees
-
-This project is intended to be boring in the best possible way:
-
-- The same input should produce the same file contents.
-- The given tag identifies the section to add/modify
-- Re-running with unchanged snippet contents should not rewrite the file.
-- Removing a managed section should leave the surrounding file intact.
-- The project should stay dependency-light and heavily tested.
-
-## Command Line
-
-```text
-snip-stitch [options] COMMAND TAG TARGET CONTENT
-```
-
-Key options:
-
-- `-m`, `--marker`: marker to use (default: "# --{snip_marker} {tag}")
-- `--comment-chars`: character used as comment for the target file type (default: "#")
-- `--start-comment`: optional comment appended to the opening marker
-- `-n`, `--dryrun`: show the would-be output without touching the file
-- `-f`, `--force`: rewrite even if the managed section content is unchanged
-- `--remove`: remove the managed section instead of adding or updating it
-- `-v`, `--verbose`: print extra detail to stderr
+No dependencies. Idempotent by design. One file, one job.
 
 ## Installation
 
-Intended for ad-hoc use (but can be used as a library too):
+Run directly (no install required):
 
 ```bash
 uvx snip-stitch --help
 ```
+
+Or install globally:
+
+```bash
+pip install snip-stitch
+```
+
+## Commands
+
+Every invocation follows the same shape:
+
+```
+snip-stitch [options] <command> <tag> <target> [content]
+```
+
+- **tag** -- identifies the managed section (3-32 lowercase chars: `[a-z][a-z0-9._-]{2,31}`)
+- **target** -- the file to modify (e.g. `~/.bashrc`, `~/.ssh/config`)
+- **content** -- the snippet source (meaning depends on the command)
+
+### `text` -- inline snippet
+
+Pass the snippet directly as a string. Handy for one-liners.
+
+```bash
+snip-stitch text rustup ~/.profile \
+  '[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"'
+```
+
+Supports `\n` escapes for callers that cannot easily pass literal newlines.
+
+### `file` -- snippet from a file
+
+Read the snippet from a file on disk. Useful when the snippet is maintained
+separately or generated by another tool.
+
+```bash
+snip-stitch file sdkman ~/.bashrc sdkman-init.sh
+```
+
+```bash
+snip-stitch file personal-github ~/.ssh/config personal-git.config
+```
+
+### `remove` -- delete a managed section
+
+Remove a previously managed section by its tag. Only two arguments needed.
+
+```bash
+snip-stitch remove sdkman ~/.bashrc
+```
+
+The surrounding file content is left untouched.
+
+## Options
+
+Options go **before** the command:
+
+```bash
+snip-stitch -n --force text mytag ~/.bashrc 'echo hello'
+```
+
+| Flag | Description |
+|------|-------------|
+| `-n`, `--dryrun` | Show what would happen without modifying the file |
+| `-v`, `--verbose` | Print extra detail to stderr |
+| `-f`, `--force` | Rewrite even if the managed section hasn't changed |
+| `--comment-chars` | Comment character(s) for the target file (default: `#`) |
+| `--start-comment` | Comment appended to the opening marker line |
+| `--end-comment` | Comment appended to the closing marker line |
+| `--snip-marker` | Marker string (default: `-8<-`) |
+
+## How it works
+
+Given this command:
+
+```bash
+snip-stitch file nvm ~/.zshrc nvm-init.sh
+```
+
+The target file will contain:
+
+```
+# ---8<- nvm -- managed section, avoid editing
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+# -8<--- nvm --
+```
+
+Run it again with the same content? Nothing happens -- the file is not rewritten.
+Change the content? Only the managed section is updated in place.
+Use `remove`? The markers and everything between them are deleted, the rest stays put.
+
+## Use cases
+
+**Shell installers** -- tools like nvm, sdkman, rustup, and Homebrew need to inject
+initialization lines into shell profiles. Instead of `grep ... || echo ... >> ~/.zshrc`
+(and hoping for the best at uninstall time), use `snip-stitch` for clean ownership.
+
+**Dotfile managers** -- keep your `~/.bashrc`, `~/.zprofile`, or `~/.ssh/config` tidy
+by giving each concern its own tagged section.
+
+**CI/CD and automation** -- any setup script that needs to own a section of a config file
+without clobbering the rest of it.
+
+**Package managers** -- npm, Homebrew, and similar tools that modify shell config during
+`install` can use the same tag at `uninstall` time to cleanly remove their section.
+
+## Guarantees
+
+- Same input produces same file contents (idempotent).
+- Unchanged snippet content does not rewrite the file.
+- Removal leaves surrounding content intact.
+- Zero runtime dependencies.
