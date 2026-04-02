@@ -76,7 +76,7 @@ uvx snip-stitch with-content ~/.bashrc sdkman-init.sh
 Inject a one-liner snippet directly:
 
 ```bash
-uvx snip-stitch --tag rustup by-text ~/.profile \
+uvx snip-stitch rustup by-text ~/.profile \
   '[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"'
 ```
 
@@ -89,7 +89,7 @@ uvx snip-stitch from-output ~/.zprofile brew-shellenv.zsh
 Remove a section the tool previously managed:
 
 ```bash
-uvx snip-stitch --tag sdkman remove ~/.bashrc
+uvx snip-stitch sdkman remove ~/.bashrc
 ```
 
 ## What It Manages
@@ -97,7 +97,7 @@ uvx snip-stitch --tag sdkman remove ~/.bashrc
 Given this command:
 
 ```bash
-uvx snip-stitch --tag nvm ~/.zshrc file:nvm-profile.zsh
+uvx snip-stitch nvm ~/.zshrc file:nvm-profile.zsh
 ```
 
 The file will end up containing a block like this:
@@ -127,7 +127,7 @@ literal multi-line argument.
 This project is intended to be boring in the best possible way:
 
 - The same input should produce the same file contents.
-- A marker owns exactly one managed section.
+- The given tag identifies the section to add/modify
 - Re-running with unchanged snippet contents should not rewrite the file.
 - Removing a managed section should leave the surrounding file intact.
 - The project should stay dependency-light and heavily tested.
@@ -135,15 +135,14 @@ This project is intended to be boring in the best possible way:
 ## Command Line
 
 ```text
-snip-stitch [options] TARGET SOURCE
+snip-stitch [options] COMMAND TAG TARGET CONTENT
 ```
 
 Key options:
 
-- `-m`, `--marker`: marker to use (default: "# -bms- {tag}")
-- `-t`, `--tag`: identifying tag within marker
-- `--comment-marker`: comment marker for the targeted type of file (default: "#")
-- `-c`, `--comment`: optional comment appended to the opening marker
+- `-m`, `--marker`: marker to use (default: "# --{snip_marker} {tag}")
+- `--comment-chars`: character used as comment for the target file type (default: "#")
+- `--start-comment`: optional comment appended to the opening marker
 - `-n`, `--dryrun`: show the would-be output without touching the file
 - `-f`, `--force`: rewrite even if the managed section content is unchanged
 - `--remove`: remove the managed section instead of adding or updating it

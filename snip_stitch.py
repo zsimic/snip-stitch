@@ -9,6 +9,16 @@ import os
 import sys
 
 DRYRUN = False
+VERBOSE = False
+
+
+def inform(message):
+    print(message, file=sys.stderr)
+
+
+def debug(message):
+    if VERBOSE:
+        inform(message)
 
 
 class Defaults:
@@ -18,20 +28,17 @@ class Defaults:
     end_comment = ""
 
 
-class ShellRc:
-    def __init__(self, tag, target_path, snippet_contents, verbose=False):
+class SnipStitch:
+    def __init__(self, tag, target_path, snippet_contents):
         """
         Args:
             tag (str): Tag identifying the section
             target_path (str): Target file to modify (ex: ~/.bash_profile)
             snippet_contents (str): Example: "file:some-path" or "<some inlined content>"
-            verbose (bool): If True, show all chatter on stderr
         """
-        # All arguments are processed in some way, keep originally given values for logging and error reporting purposes
         self.tag = tag
         self.given_target_path = target_path
         self.given_snippet_contents = snippet_contents
-        self.verbose = verbose
         self.target_path = os.path.expanduser(target_path)
         self.comment_chars = Defaults.comment_chars
         self.snip_marker = Defaults.snip_marker
@@ -42,17 +49,6 @@ class ShellRc:
         self.after_insertion = []
         self.target_contents = self.file_contents(self.target_path)
         self.snippet_contents = self.resolved_snippet_contents(snippet_contents)
-
-    def debug(self, message):
-        if self.verbose:
-            self.inform(message)
-
-    def inform(self, message):
-        """
-        Args:
-            message (str): Message to log on stderr
-        """
-        print(message, file=sys.stderr)
 
     def validate_comment(self, comment, option_name):
         if comment:
@@ -198,8 +194,8 @@ class ShellRc:
             target_path (str): Path to target file, example: ~/.bash_profile
             contents (str): Contents to write to the file
         """
-        self.inform("Updating %s" % target_path)
-        self.debug("Contents:\n%s" % contents)
+        inform("Updating %s" % target_path)
+        debug("Contents:\n%s" % contents)
         with open(target_path, "w") as fh:
             fh.write(contents)
             if contents and contents[-1] != "\n":
@@ -215,13 +211,13 @@ class ShellRc:
         self.parse_target_contents()
         snippet_contents = self.rendered_snippet(include_marker=False)
         if not force and snippet_contents == self.marked_contents:
-            self.inform("Section has not changed, not modifying '%s'" % self.given_target_path)
+            inform("Section has not changed, not modifying '%s'" % self.given_target_path)
             return
 
         rendered_contents = self.rendered_target_contents()
         if DRYRUN:
-            self.inform("[DRYRUN] Would update %s, contents:" % self.given_target_path)
-            self.inform(rendered_contents)
+            inform("[DRYRUN] Would update %s, contents:" % self.given_target_path)
+            inform(rendered_contents)
             return
 
         # Write updated contents
@@ -242,15 +238,16 @@ def main():
     parser.add_argument("snippet", help="Snippet to add to target file, or file:<path> (use contents of referred file:)")
     args = parser.parse_args()
 
-    global DRYRUN
+    global DRYRUN, VERBOSE
     DRYRUN = args.dryrun
+    VERBOSE = args.verbose
 
-    shell_rc = ShellRc(args.tag, args.target_path, args.snippet, verbose=args.verbose)
-    shell_rc.comment_chars = args.comment_chars
-    shell_rc.snip_marker = args.snip_marker
-    shell_rc.start_comment = args.start_comment
-    shell_rc.end_comment = args.end_comment
-    return shell_rc.run_update(force=args.force)
+    ss = SnipStitch(args.tag, args.target_path, args.snippet)
+    ss.comment_chars = args.comment_chars
+    ss.snip_marker = args.snip_marker
+    ss.start_comment = args.start_comment
+    ss.end_comment = args.end_comment
+    ss.run_update(force=args.force)
 
 
 if __name__ == "__main__":  # pragma: no covers

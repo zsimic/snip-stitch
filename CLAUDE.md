@@ -25,7 +25,7 @@ uvx --with tox-uv tox -e typecheck
 
 The entire implementation lives in a single file: `snip_stitch.py`. No external runtime dependencies.
 
-**`ShellRc`** is the core class. Given a `tag`, `target_path`, and `snippet_contents`, it:
+**`SnipStitch`** is the core class. Given a `tag`, `target_path`, and `snippet_contents`, it:
 1. Reads the existing target file
 2. Parses it into three segments: `before_insertion`, `marked_contents`, `after_insertion`
 3. Detects whether the snippet has changed (idempotency check)
