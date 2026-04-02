@@ -15,16 +15,16 @@ DRYRUN = False
 VERBOSE = False
 
 
-def inform(message):
+def inform(message: str) -> None:
     print(message, file=sys.stderr)
 
 
-def debug(message):
+def debug(message: str) -> None:
     if VERBOSE:
         inform(message)
 
 
-def splitlines(text: str | None) -> list:
+def splitlines(text: str | None) -> list[str]:
     return text.strip().splitlines() if text else []
 
 
@@ -36,13 +36,7 @@ class Defaults:
 
 
 class SnipStitch:
-    def __init__(self, tag, target_path, snippet_lines):
-        """
-        Args:
-            tag (str): Tag identifying the section
-            target_path (str): Target file to modify (ex: ~/.bash_profile)
-            snippet_lines (list[str]): Pre-resolved snippet lines to inject
-        """
+    def __init__(self, tag: str, target_path: str, snippet_lines: list[str]) -> None:
         self.tag = tag
         self.given_target_path = target_path
         self.target_path = os.path.expanduser(target_path)
@@ -50,21 +44,14 @@ class SnipStitch:
         self.snip_marker = Defaults.snip_marker
         self.start_comment = Defaults.start_comment
         self.end_comment = Defaults.end_comment
-        self.before_insertion = []
-        self.marked_contents = []
-        self.after_insertion = []
+        self.before_insertion: list[str] = []
+        self.marked_contents: list[str] = []
+        self.after_insertion: list[str] = []
         self.target_contents = self.read_file(self.target_path)
         self.snippet_contents = snippet_lines
 
     @staticmethod
-    def read_file(path):
-        """
-        Args:
-            path (str): Path to file
-
-        Returns:
-            (list[str]): Contents of the file (list of lines)
-        """
+    def read_file(path: str) -> list[str]:
         path = os.path.expanduser(path)
         if not os.path.exists(path):
             return []
@@ -73,14 +60,14 @@ class SnipStitch:
             return splitlines(fh.read())
 
     @property
-    def marker_start(self):
+    def marker_start(self) -> str:
         return f"{self.comment_chars} --{self.snip_marker} {self.tag} --"
 
     @property
-    def marker_end(self):
+    def marker_end(self) -> str:
         return f"{self.comment_chars} {self.snip_marker}-- {self.tag} --"
 
-    def parse_target_contents(self):
+    def parse_target_contents(self) -> None:
         """Parse existing target file, recognize any already-existing section"""
         self.before_insertion = []
         self.marked_contents = []
@@ -103,15 +90,8 @@ class SnipStitch:
 
             accumulator.append(line)
 
-    def rendered_snippet(self, include_marker=True):
-        """
-        Args:
-            include_marker (bool): Used for testing
-
-        Returns:
-            (list[str]): Rendered snippet, optionally with the section marker
-        """
-        result = []
+    def rendered_snippet(self, include_marker: bool = True) -> list[str]:
+        result: list[str] = []
         if self.snippet_contents:
             if include_marker:
                 marker = self.marker_start
@@ -130,12 +110,8 @@ class SnipStitch:
 
         return result
 
-    def rendered_target_contents(self):
-        """
-        Returns:
-            (str): Rendered contents of target file (with snippet + its marker included)
-        """
-        result = []
+    def rendered_target_contents(self) -> str:
+        result: list[str] = []
         if self.before_insertion:
             result.extend(self.before_insertion)
 
@@ -153,35 +129,24 @@ class SnipStitch:
 
         return "\n".join(result)
 
-    def write_content(self, target_path, contents):
-        """
-        Args:
-            target_path (str): Path to target file, example: ~/.bash_profile
-            contents (str): Contents to write to the file
-        """
-        inform("Updating %s" % target_path)
-        debug("Contents:\n%s" % contents)
+    def write_content(self, target_path: str, contents: str) -> None:
+        inform(f"Updating {target_path}")
+        debug(f"Contents:\n{contents}")
         with open(target_path, "w") as fh:
             fh.write(contents)
             if contents and contents[-1] != "\n":
                 fh.write("\n")
 
-    def run_update(self, force=False):
-        """
-        Perform the actual update: inject snippet into the target file, in an idempotent manner
-
-        Args:
-            force (bool): If True, regenerate contents even if they didn't change
-        """
+    def run_update(self, force: bool = False) -> None:
         self.parse_target_contents()
         snippet_contents = self.rendered_snippet(include_marker=False)
         if not force and snippet_contents == self.marked_contents:
-            inform("Section has not changed, not modifying '%s'" % self.given_target_path)
+            inform(f"Section has not changed, not modifying '{self.given_target_path}'")
             return
 
         rendered_contents = self.rendered_target_contents()
         if DRYRUN:
-            inform("[DRYRUN] Would update %s, contents:" % self.given_target_path)
+            inform(f"[DRYRUN] Would update {self.given_target_path}, contents:")
             inform(rendered_contents)
             return
 
@@ -192,14 +157,14 @@ class SnipStitch:
 TAG_RE = re.compile(r"[a-z][a-z0-9._-]{2,31}$")
 
 
-def validated_tag(value):
+def validated_tag(value: str) -> str:
     """argparse type function: validate tag format"""
     if not TAG_RE.match(value):
         raise argparse.ArgumentTypeError(f"invalid tag '{value}' (must be 3-32 lowercase chars, matching [a-z][a-z0-9._-]{{2,31}})")
     return value
 
 
-def validated_comment(value):
+def validated_comment(value: str) -> str:
     """argparse type function: validate comment (single line, max 120 chars)"""
     if "\n" in value:
         lines = splitlines(value)
@@ -212,7 +177,7 @@ def validated_comment(value):
     return value
 
 
-def resolved_text(text):
+def resolved_text(text: str) -> list[str]:
     """Resolve inline text: expand \\n escapes and split into lines"""
     if "\\n" in text:
         text = text.replace("\\n", "\n")
