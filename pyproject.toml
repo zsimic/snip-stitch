@@ -125,7 +125,7 @@ commands = [
 
 [tool.tox.env_run_base.set_env]
 COVERAGE_FILE = "{toxworkdir}/.coverage.{envname}"
-PYTHONPYCACHEPREFIX = "{toxworkdir}/.pycache"
+PYTHONDONTWRITEBYTECODE = "1"
 
 [tool.tox.env.coverage]
 skip_install = true
