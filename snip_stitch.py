@@ -50,14 +50,6 @@ class SnipStitch:
         self.target_contents = self.read_file(self.target_path)
         self.snippet_contents = snippet_lines
 
-    def validate_comment(self, comment, option_name):
-        if comment:
-            comment = self.splitlines(comment)
-            if len(comment) > 1:
-                line_count = len(comment)
-                comment = "\n".join(comment)
-                sys.exit(f"Provide maximum one line for --{option_name}, got %s lines:\n%s" % (line_count, comment))
-
     @staticmethod
     def splitlines(text):
         """
@@ -124,8 +116,6 @@ class SnipStitch:
         Returns:
             (list[str]): Rendered snippet, optionally with the section marker
         """
-        self.validate_comment(self.start_comment, "start-comment")
-        self.validate_comment(self.end_comment, "end-comment")
         result = []
         if self.snippet_contents:
             if include_marker:
@@ -214,6 +204,15 @@ def validated_tag(value):
     return value
 
 
+def validated_comment(value):
+    """argparse type function: validate comment (single line, max 120 chars)"""
+    if "\n" in value:
+        raise argparse.ArgumentTypeError(f"comment must be a single line, got {len(value.splitlines())} lines")
+    if len(value) > 120:
+        raise argparse.ArgumentTypeError(f"comment too long ({len(value)} chars, max 120)")
+    return value
+
+
 def resolved_text(text):
     """Resolve inline text: expand \\n escapes and split into lines"""
     if "\\n" in text:
@@ -227,8 +226,8 @@ def main():
     parser.add_argument("--verbose", "-v", action="store_true", help="Be verbose")
     parser.add_argument("--force", "-f", action="store_true", help="Force update, even if not needed")
     parser.add_argument("--comment-chars", default=Defaults.comment_chars, help="Character(s) that constitute a comment in target file")
-    parser.add_argument("--start-comment", default=Defaults.start_comment, help="Optional comment when opening the section")
-    parser.add_argument("--end-comment", default=Defaults.end_comment, help="Optional comment when ending the section")
+    parser.add_argument("--start-comment", type=validated_comment, default=Defaults.start_comment, help="Comment when opening the section")
+    parser.add_argument("--end-comment", type=validated_comment, default=Defaults.end_comment, help="Comment when ending the section")
     parser.add_argument("--snip-marker", default=Defaults.snip_marker, help="Snip marker to use (default: '%(default)s)'")
 
     subparsers = parser.add_subparsers(dest="command")

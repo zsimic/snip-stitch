@@ -71,7 +71,12 @@ def test_dryrun(cli):
     # Multi-line comment is not accepted
     cli.run("-n", "--start-comment", "multiple\n\nlines", "text", "testing", "my-bash.rc", "some\ncontent")
     assert cli.failed
-    assert "Provide maximum one line for --start-comment, got 3 lines:\nmultiple\n\nlines" in cli.logged.stderr.contents()
+    assert "comment must be a single line" in cli.logged.stderr.contents()
+
+    # Comment too long is not accepted
+    cli.run("-n", "--end-comment", "x" * 121, "text", "testing", "my-bash.rc", "some\ncontent")
+    assert cli.failed
+    assert "comment too long" in cli.logged.stderr.contents()
 
     # Invalid tags are rejected
     cli.run("-n", "text", "AB", "my-bash.rc", "content")
