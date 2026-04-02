@@ -4,6 +4,8 @@
 Add a snippet to a bash/zsh/... shell rc file
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 import re
@@ -20,6 +22,10 @@ def inform(message):
 def debug(message):
     if VERBOSE:
         inform(message)
+
+
+def splitlines(text: str | None) -> list:
+    return text.strip().splitlines() if text else []
 
 
 class Defaults:
@@ -51,17 +57,6 @@ class SnipStitch:
         self.snippet_contents = snippet_lines
 
     @staticmethod
-    def splitlines(text):
-        """
-        Args:
-            text (str | list | None): Text to split
-
-        Returns:
-            (list): Meaningful/groomed lines from 'text'
-        """
-        return text.strip().splitlines() if text else []
-
-    @staticmethod
     def read_file(path):
         """
         Args:
@@ -75,7 +70,7 @@ class SnipStitch:
             return []
 
         with open(path) as fh:
-            return SnipStitch.splitlines(fh.read())
+            return splitlines(fh.read())
 
     @property
     def marker_start(self):
@@ -207,9 +202,13 @@ def validated_tag(value):
 def validated_comment(value):
     """argparse type function: validate comment (single line, max 120 chars)"""
     if "\n" in value:
-        raise argparse.ArgumentTypeError(f"comment must be a single line, got {len(value.splitlines())} lines")
+        lines = splitlines(value)
+        if len(lines) > 1:
+            raise argparse.ArgumentTypeError(f"comment must be a single line, got {len(lines)} lines")
+
     if len(value) > 120:
         raise argparse.ArgumentTypeError(f"comment too long ({len(value)} chars, max 120)")
+
     return value
 
 
@@ -217,7 +216,8 @@ def resolved_text(text):
     """Resolve inline text: expand \\n escapes and split into lines"""
     if "\\n" in text:
         text = text.replace("\\n", "\n")
-    return SnipStitch.splitlines(text)
+
+    return splitlines(text)
 
 
 def main():
