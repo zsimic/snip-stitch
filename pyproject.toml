@@ -47,6 +47,9 @@ dev = [
 [project.scripts]
 snip-stitch = "snip_stitch:main"
 
+[project.urls]
+Source = "https://github.com/zsimic/snip-stitch"
+
 
 [tool.coverage.run]
 data_file = ".tox/.coverage"
@@ -109,3 +112,57 @@ max-complexity = 19
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
+
+[tool.tox]
+env_list = ["py310", "py314", "coverage", "style", "typecheck", "readme"]
+
+[tool.tox.env_run_base]
+use_develop = true
+dependency_groups = ["test"]
+commands = [
+    ["pytest", "-vv", "--cov=snip_stitch", "tests"]
+]
+
+[tool.tox.env_run_base.set_env]
+COVERAGE_FILE = "{toxworkdir}/.coverage.{envname}"
+PYTHONPYCACHEPREFIX = "{toxworkdir}/.pycache"
+
+[tool.tox.env.coverage]
+skip_install = true
+deps = ["coverage"]
+set_env = { COVERAGE_FILE = "{toxworkdir}/.coverage" }
+commands = [
+    ["coverage", "combine"],
+    ["coverage", "report", "-m"],
+    ["coverage", "xml"],
+    ["coverage", "html"]
+]
+
+[tool.tox.env.style]
+skip_install = true
+deps = ["ruff"]
+commands = [
+    ["ruff", "check"],
+    ["ruff", "format", "--diff"]
+]
+
+[tool.tox.env.typecheck]
+use_develop = true
+deps = ["pyright"]
+commands = [["pyright"]]
+
+[tool.tox.env.readme]
+skip_install = true
+deps = ["uv", "twine"]
+commands = [
+    ["uv", "build", "-q", "-o", "{env_dir}/dist"],
+    ["twine", "check", "{env_dir}/dist/*"]
+]
+
+[tool.tox.env.reformat]
+skip_install = true
+deps = ["ruff"]
+commands = [
+    ["ruff", "check", "--fix"],
+    ["ruff", "format"]
+]
