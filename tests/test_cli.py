@@ -73,6 +73,19 @@ def test_dryrun(cli):
     assert cli.failed
     assert "Provide maximum one line for --start-comment, got 3 lines:\nmultiple\n\nlines" in cli.logged.stderr.contents()
 
+    # Invalid tags are rejected
+    cli.run("-n", "text", "AB", "my-bash.rc", "content")
+    assert cli.failed
+    assert "invalid tag" in cli.logged.stderr.contents()
+
+    cli.run("-n", "text", "1bad", "my-bash.rc", "content")
+    assert cli.failed
+    assert "invalid tag" in cli.logged.stderr.contents()
+
+    cli.run("-n", "text", "has spaces", "my-bash.rc", "content")
+    assert cli.failed
+    assert "invalid tag" in cli.logged.stderr.contents()
+
 
 def test_samples(cli):
     sample_dir = os.path.join(runez.DEV.project_folder, "tests/samples")

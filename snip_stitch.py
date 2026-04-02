@@ -6,6 +6,7 @@ Add a snippet to a bash/zsh/... shell rc file
 
 import argparse
 import os
+import re
 import sys
 
 DRYRUN = False
@@ -203,6 +204,16 @@ class SnipStitch:
         self.write_content(self.target_path, rendered_contents)
 
 
+TAG_RE = re.compile(r"[a-z][a-z0-9._-]{2,31}$")
+
+
+def validated_tag(value):
+    """argparse type function: validate tag format"""
+    if not TAG_RE.match(value):
+        raise argparse.ArgumentTypeError(f"invalid tag '{value}' (must be 3-32 lowercase chars, matching [a-z][a-z0-9._-]{{2,31}})")
+    return value
+
+
 def resolved_text(text):
     """Resolve inline text: expand \\n escapes and split into lines"""
     if "\\n" in text:
@@ -224,17 +235,17 @@ def main():
     subparsers.required = True
 
     text_parser = subparsers.add_parser("text", help="Use inline text as snippet content")
-    text_parser.add_argument("tag", help="Tag for identification")
+    text_parser.add_argument("tag", type=validated_tag, help="Tag for identification")
     text_parser.add_argument("target", help="Path to file to modify (ex: ~/.bash_profile)")
     text_parser.add_argument("content", help="Snippet text to add")
 
     file_parser = subparsers.add_parser("file", help="Use contents of a file as snippet")
-    file_parser.add_argument("tag", help="Tag for identification")
+    file_parser.add_argument("tag", type=validated_tag, help="Tag for identification")
     file_parser.add_argument("target", help="Path to file to modify (ex: ~/.bash_profile)")
     file_parser.add_argument("source", help="Path to file whose contents will be used as the snippet")
 
     remove_parser = subparsers.add_parser("remove", help="Remove a managed section")
-    remove_parser.add_argument("tag", help="Tag for identification")
+    remove_parser.add_argument("tag", type=validated_tag, help="Tag for identification")
     remove_parser.add_argument("target", help="Path to file to modify (ex: ~/.bash_profile)")
 
     args = parser.parse_args()
