@@ -1,9 +1,17 @@
 snip-stitch
 ===========
 
+.. image:: https://img.shields.io/pypi/v/snip-stitch.svg
+    :target: https://pypi.org/project/snip-stitch/
+    :alt: Version on pypi
+
 .. image:: https://github.com/zsimic/snip-stitch/workflows/Tests/badge.svg
     :target: https://github.com/zsimic/snip-stitch/actions
     :alt: Tested with Github Actions
+
+.. image:: https://img.shields.io/pypi/pyversions/snip-stitch.svg
+    :target: https://github.com/zsimic/snip-stitch
+    :alt: Python versions tested
 
 
 Idempotently add, update, or remove managed snippets inside shell-like text files.
