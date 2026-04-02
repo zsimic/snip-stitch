@@ -185,32 +185,57 @@ def resolved_text(text: str) -> list[str]:
     return splitlines(text)
 
 
+class _Formatter(argparse.HelpFormatter):
+    """Suppress the metavar heading that argparse adds for subparsers"""
+
+    def _format_action(self, action: argparse.Action) -> str:
+        if isinstance(action, argparse._SubParsersAction):
+            parts: list[str] = []
+            for choice_action in action._get_subactions():
+                parts.append(self._format_action(choice_action))
+            return "".join(parts)
+        return super()._format_action(action)
+
+
+def _subparser(subparsers: argparse._SubParsersAction, name: str, **kwargs) -> argparse.ArgumentParser:  # type: ignore[type-arg]
+    p = subparsers.add_parser(name, formatter_class=_Formatter, **kwargs)
+    p._action_groups[0].title = "Arguments"
+    return p
+
+
 def main():
-    parser = argparse.ArgumentParser(prog="snip-stitch", description=__doc__)
-    parser.add_argument("--dryrun", "-n", action="store_true", help="Perform a dryrun")
-    parser.add_argument("--verbose", "-v", action="store_true", help="Be verbose")
-    parser.add_argument("--force", "-f", action="store_true", help="Force update, even if not needed")
+    parser = argparse.ArgumentParser(
+        prog="snip-stitch",
+        description=__doc__,
+        usage="snip-stitch [OPTIONS] COMMAND [ARGS]...",
+        formatter_class=_Formatter,
+    )
+    parser.add_argument("-n", "--dryrun", action="store_true", help="Perform a dryrun")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Be verbose")
+    parser.add_argument("-f", "--force", action="store_true", help="Force update, even if not needed")
     parser.add_argument("--comment-chars", default=Defaults.comment_chars, help="Character(s) that constitute a comment in target file")
     parser.add_argument("--start-comment", type=validated_comment, default=Defaults.start_comment, help="Comment when opening the section")
     parser.add_argument("--end-comment", type=validated_comment, default=Defaults.end_comment, help="Comment when ending the section")
     parser.add_argument("--snip-marker", default=Defaults.snip_marker, help="Snip marker to use (default: '%(default)s)'")
 
-    subparsers = parser.add_subparsers(dest="command")
+    subparsers = parser.add_subparsers(dest="command", title="Commands", metavar="COMMAND")
     subparsers.required = True
 
-    text_parser = subparsers.add_parser("text", help="Use inline text as snippet content")
-    text_parser.add_argument("tag", type=validated_tag, help="Tag for identification")
-    text_parser.add_argument("target", help="Path to file to modify (ex: ~/.bash_profile)")
-    text_parser.add_argument("content", help="Snippet text to add")
+    usage_prefix = "snip-stitch [OPTIONS]"
 
-    file_parser = subparsers.add_parser("file", help="Use contents of a file as snippet")
-    file_parser.add_argument("tag", type=validated_tag, help="Tag for identification")
-    file_parser.add_argument("target", help="Path to file to modify (ex: ~/.bash_profile)")
-    file_parser.add_argument("source", help="Path to file whose contents will be used as the snippet")
+    text_parser = _subparser(subparsers, "text", help="Inline text as snippet", usage=f"{usage_prefix} text TAG TARGET CONTENT")
+    text_parser.add_argument("tag", type=validated_tag, metavar="TAG", help="Tag identifying the managed section")
+    text_parser.add_argument("target", metavar="TARGET", help="Path to file to modify")
+    text_parser.add_argument("content", metavar="CONTENT", help="Snippet text to add")
 
-    remove_parser = subparsers.add_parser("remove", help="Remove a managed section")
-    remove_parser.add_argument("tag", type=validated_tag, help="Tag for identification")
-    remove_parser.add_argument("target", help="Path to file to modify (ex: ~/.bash_profile)")
+    file_parser = _subparser(subparsers, "file", help="File contents as snippet", usage=f"{usage_prefix} file TAG TARGET SOURCE")
+    file_parser.add_argument("tag", type=validated_tag, metavar="TAG", help="Tag identifying the managed section")
+    file_parser.add_argument("target", metavar="TARGET", help="Path to file to modify")
+    file_parser.add_argument("source", metavar="SOURCE", help="File whose contents to use as the snippet")
+
+    remove_parser = _subparser(subparsers, "remove", help="Remove a managed section", usage=f"{usage_prefix} remove TAG TARGET")
+    remove_parser.add_argument("tag", type=validated_tag, metavar="TAG", help="Tag identifying the managed section")
+    remove_parser.add_argument("target", metavar="TARGET", help="Path to file to modify")
 
     args = parser.parse_args()
 
