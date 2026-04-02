@@ -46,7 +46,7 @@ class SnipStitch:
         self.before_insertion = []
         self.marked_contents = []
         self.after_insertion = []
-        self.target_contents = self.file_contents(self.target_path)
+        self.target_contents = self.read_file(self.target_path)
         self.snippet_contents = snippet_lines
 
     def validate_comment(self, comment, option_name):
@@ -68,7 +68,8 @@ class SnipStitch:
         """
         return text.strip().splitlines() if text else []
 
-    def file_contents(self, path):
+    @staticmethod
+    def read_file(path):
         """
         Args:
             path (str): Path to file
@@ -81,7 +82,7 @@ class SnipStitch:
             return []
 
         with open(path) as fh:
-            return self.splitlines(fh.read())
+            return SnipStitch.splitlines(fh.read())
 
     @property
     def marker_start(self):
@@ -227,6 +228,11 @@ def main():
     text_parser.add_argument("target", help="Path to file to modify (ex: ~/.bash_profile)")
     text_parser.add_argument("content", help="Snippet text to add")
 
+    file_parser = subparsers.add_parser("file", help="Use contents of a file as snippet")
+    file_parser.add_argument("tag", help="Tag for identification")
+    file_parser.add_argument("target", help="Path to file to modify (ex: ~/.bash_profile)")
+    file_parser.add_argument("source", help="Path to file whose contents will be used as the snippet")
+
     remove_parser = subparsers.add_parser("remove", help="Remove a managed section")
     remove_parser.add_argument("tag", help="Tag for identification")
     remove_parser.add_argument("target", help="Path to file to modify (ex: ~/.bash_profile)")
@@ -237,7 +243,12 @@ def main():
     DRYRUN = args.dryrun
     VERBOSE = args.verbose
 
-    snippet_lines = resolved_text(args.content) if args.command == "text" else []
+    if args.command == "text":
+        snippet_lines = resolved_text(args.content)
+    elif args.command == "file":
+        snippet_lines = SnipStitch.read_file(args.source)
+    else:
+        snippet_lines = []
 
     ss = SnipStitch(args.tag, args.target, snippet_lines)
     ss.comment_chars = args.comment_chars

@@ -3,12 +3,6 @@ import textwrap
 
 import runez
 
-ENSURE_PATH = """\
-local_bin=~/.local/bin
-if [[ $PATH != *"$local_bin"* && -d $1 ]]; then
-    export PATH=$local_bin:$PATH
-fi"""
-
 EXPECTED_REGEN = """
 Updating samples/bashrc
 Contents:
@@ -52,6 +46,9 @@ def test_cli(cli):
     assert "usage:" in cli.logged.stdout
 
     cli.run("text", "--help")
+    assert cli.succeeded
+
+    cli.run("file", "--help")
     assert cli.succeeded
 
     cli.run("remove", "--help")
@@ -99,14 +96,14 @@ def test_samples(cli):
     assert "[DRYRUN] Would update samples/bashrc" in cli.logged.stderr
     assert "foo\nbar\n# -8<--- my-test-app --" in cli.logged
 
-    # Force update with text (same content as ensure-path sample)
-    cli.run("-v", "--force", "text", "my-test-app", "samples/bashrc", ENSURE_PATH)
+    # Force update with file subcommand (reads ensure-path sample)
+    cli.run("-v", "--force", "file", "my-test-app", "samples/bashrc", "samples/ensure-path")
     assert cli.succeeded
     actual_lines = last_n_lines(13, cli.logged.stderr.contents())
     assert actual_lines == EXPECTED_REGEN.strip().splitlines()
 
-    # Idempotent: same content again, no update
-    cli.run("text", "my-test-app", "samples/bashrc", ENSURE_PATH)
+    # Idempotent: same file content again, no update
+    cli.run("file", "my-test-app", "samples/bashrc", "samples/ensure-path")
     assert cli.succeeded
     assert "Section has not changed, not modifying 'samples/bashrc'" in cli.logged
 
@@ -117,8 +114,8 @@ def test_samples(cli):
     contents = list(runez.readlines("samples/bashrc"))
     assert contents == ["# example bashrc file", "alias ls='ls -FGh'", "", "", "alias foo=~/bar"]
 
-    # Re-add with text
-    cli.run("text", "my-test-app", "samples/bashrc", ENSURE_PATH)
+    # Re-add with file subcommand
+    cli.run("file", "my-test-app", "samples/bashrc", "samples/ensure-path")
     assert cli.succeeded
     assert "Updating samples/bashrc" in cli.logged.stderr.contents()
     contents = "\n".join(runez.readlines("samples/bashrc"))
