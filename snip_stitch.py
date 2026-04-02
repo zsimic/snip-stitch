@@ -29,16 +29,15 @@ class Defaults:
 
 
 class SnipStitch:
-    def __init__(self, tag, target_path, snippet_contents):
+    def __init__(self, tag, target_path, snippet_lines):
         """
         Args:
             tag (str): Tag identifying the section
             target_path (str): Target file to modify (ex: ~/.bash_profile)
-            snippet_contents (str): Example: "file:some-path" or "<some inlined content>"
+            snippet_lines (list[str]): Pre-resolved snippet lines to inject
         """
         self.tag = tag
         self.given_target_path = target_path
-        self.given_snippet_contents = snippet_contents
         self.target_path = os.path.expanduser(target_path)
         self.comment_chars = Defaults.comment_chars
         self.snip_marker = Defaults.snip_marker
@@ -48,7 +47,7 @@ class SnipStitch:
         self.marked_contents = []
         self.after_insertion = []
         self.target_contents = self.file_contents(self.target_path)
-        self.snippet_contents = self.resolved_snippet_contents(snippet_contents)
+        self.snippet_contents = snippet_lines
 
     def validate_comment(self, comment, option_name):
         if comment:
@@ -57,27 +56,6 @@ class SnipStitch:
                 line_count = len(comment)
                 comment = "\n".join(comment)
                 sys.exit(f"Provide maximum one line for --{option_name}, got %s lines:\n%s" % (line_count, comment))
-
-    def resolved_snippet_contents(self, snippet_contents):
-        """
-        Args:
-            snippet_contents (str): Snippet to add, can be a "file:...", or "_empty_", or actual content
-
-        Returns:
-            (list[str]): Actual snippet contents
-        """
-        if not snippet_contents or snippet_contents == "_empty_":
-            # "_empty_" can be used as a placeholder for asking to remove added snippet
-            return []
-
-        if snippet_contents.startswith("file:"):
-            # Grab contents of stated file:
-            return self.file_contents(snippet_contents[5:])
-
-        if "\\n" in snippet_contents:
-            snippet_contents = snippet_contents.replace("\\n", "\n")
-
-        return self.splitlines(snippet_contents)
 
     @staticmethod
     def splitlines(text):
@@ -224,6 +202,13 @@ class SnipStitch:
         self.write_content(self.target_path, rendered_contents)
 
 
+def resolved_text(text):
+    """Resolve inline text: expand \\n escapes and split into lines"""
+    if "\\n" in text:
+        text = text.replace("\\n", "\n")
+    return SnipStitch.splitlines(text)
+
+
 def main():
     parser = argparse.ArgumentParser(prog="snip-stitch", description=__doc__)
     parser.add_argument("--dryrun", "-n", action="store_true", help="Perform a dryrun")
@@ -233,16 +218,28 @@ def main():
     parser.add_argument("--start-comment", default=Defaults.start_comment, help="Optional comment when opening the section")
     parser.add_argument("--end-comment", default=Defaults.end_comment, help="Optional comment when ending the section")
     parser.add_argument("--snip-marker", default=Defaults.snip_marker, help="Snip marker to use (default: '%(default)s)'")
-    parser.add_argument("tag", help="Tag for identification")
-    parser.add_argument("target_path", help="Path to file to modify (ex: ~/.bash_profile)")
-    parser.add_argument("snippet", help="Snippet to add to target file, or file:<path> (use contents of referred file:)")
+
+    subparsers = parser.add_subparsers(dest="command")
+    subparsers.required = True
+
+    text_parser = subparsers.add_parser("text", help="Use inline text as snippet content")
+    text_parser.add_argument("tag", help="Tag for identification")
+    text_parser.add_argument("target", help="Path to file to modify (ex: ~/.bash_profile)")
+    text_parser.add_argument("content", help="Snippet text to add")
+
+    remove_parser = subparsers.add_parser("remove", help="Remove a managed section")
+    remove_parser.add_argument("tag", help="Tag for identification")
+    remove_parser.add_argument("target", help="Path to file to modify (ex: ~/.bash_profile)")
+
     args = parser.parse_args()
 
     global DRYRUN, VERBOSE
     DRYRUN = args.dryrun
     VERBOSE = args.verbose
 
-    ss = SnipStitch(args.tag, args.target_path, args.snippet)
+    snippet_lines = resolved_text(args.content) if args.command == "text" else []
+
+    ss = SnipStitch(args.tag, args.target, snippet_lines)
     ss.comment_chars = args.comment_chars
     ss.snip_marker = args.snip_marker
     ss.start_comment = args.start_comment

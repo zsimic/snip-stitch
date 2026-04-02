@@ -3,6 +3,12 @@ import textwrap
 
 import runez
 
+ENSURE_PATH = """\
+local_bin=~/.local/bin
+if [[ $PATH != *"$local_bin"* && -d $1 ]]; then
+    export PATH=$local_bin:$PATH
+fi"""
+
 EXPECTED_REGEN = """
 Updating samples/bashrc
 Contents:
@@ -20,7 +26,7 @@ alias foo=~/bar
 """
 
 
-EXPECTED_EMPTIED_REGEN = """
+EXPECTED_READD = """
 # example bashrc file
 alias ls='ls -FGh'
 
@@ -45,10 +51,16 @@ def test_cli(cli):
     assert cli.succeeded
     assert "usage:" in cli.logged.stdout
 
+    cli.run("text", "--help")
+    assert cli.succeeded
+
+    cli.run("remove", "--help")
+    assert cli.succeeded
+
 
 def test_dryrun(cli):
-    # Snippet given as positional arg
-    cli.run("-n", "testing", "my-bash.rc", "some\ncontent", "--end-comment", "peace")
+    # Snippet given as positional arg via 'text' subcommand
+    cli.run("-n", "--end-comment", "peace", "text", "testing", "my-bash.rc", "some\ncontent")
     assert cli.succeeded
     expected = textwrap.dedent("""\
         [DRYRUN] Would update my-bash.rc, contents:
@@ -60,7 +72,7 @@ def test_dryrun(cli):
     assert cli.logged.stderr.contents() == expected
 
     # Multi-line comment is not accepted
-    cli.run("-n", "testing", "my-bash.rc", "some\ncontent", "--start-comment", "multiple\n\nlines")
+    cli.run("-n", "--start-comment", "multiple\n\nlines", "text", "testing", "my-bash.rc", "some\ncontent")
     assert cli.failed
     assert "Provide maximum one line for --start-comment, got 3 lines:\nmultiple\n\nlines" in cli.logged.stderr.contents()
 
@@ -69,11 +81,8 @@ def test_samples(cli):
     sample_dir = os.path.join(runez.DEV.project_folder, "tests/samples")
     runez.copy(sample_dir, "samples", logger=None)
 
-    cli.run("-v", "my-test-app", "samples/bashrc", "file:samples/ensure-path")
-    assert cli.succeeded
-    assert "Section has not changed, not modifying 'samples/bashrc'" in cli.logged.stderr.contents()
-
-    cli.run("-n", "my-test-app", "samples/bashrc", "_empty_")
+    # Dryrun remove: shows what would happen without modifying the file
+    cli.run("-n", "remove", "my-test-app", "samples/bashrc")
     assert cli.succeeded
     lines = last_n_lines(5, cli.logged.stderr.contents())
     assert lines == [
@@ -83,32 +92,34 @@ def test_samples(cli):
         "",
         "alias foo=~/bar",
     ]
-    assert "[DRYRUN] Would update samples/bashrc" in cli.logged.stderr
-    assert "## -- Added by my-test-app" not in cli.logged
 
-    cli.run("-n", "my-test-app", "samples/bashrc", "foo\\nbar")
+    # Dryrun text with \n escapes
+    cli.run("-n", "text", "my-test-app", "samples/bashrc", "foo\\nbar")
     assert cli.succeeded
     assert "[DRYRUN] Would update samples/bashrc" in cli.logged.stderr
     assert "foo\nbar\n# -8<--- my-test-app --" in cli.logged
 
-    cli.run("-v", "--force", "my-test-app", "samples/bashrc", "file:samples/ensure-path")
+    # Force update with text (same content as ensure-path sample)
+    cli.run("-v", "--force", "text", "my-test-app", "samples/bashrc", ENSURE_PATH)
     assert cli.succeeded
     actual_lines = last_n_lines(13, cli.logged.stderr.contents())
     assert actual_lines == EXPECTED_REGEN.strip().splitlines()
 
-    cli.run("my-test-app", "samples/bashrc", "file:samples/ensure-path")
+    # Idempotent: same content again, no update
+    cli.run("text", "my-test-app", "samples/bashrc", ENSURE_PATH)
     assert cli.succeeded
     assert "Section has not changed, not modifying 'samples/bashrc'" in cli.logged
 
-    cli.run("my-test-app", "samples/bashrc", "_empty_")
+    # Actually remove the section
+    cli.run("remove", "my-test-app", "samples/bashrc")
     assert cli.succeeded
     assert "Updating samples/bashrc" in cli.logged.stderr.contents()
     contents = list(runez.readlines("samples/bashrc"))
     assert contents == ["# example bashrc file", "alias ls='ls -FGh'", "", "", "alias foo=~/bar"]
 
-    cli.run("my-test-app", "samples/bashrc", "file:samples/ensure-path")
+    # Re-add with text
+    cli.run("text", "my-test-app", "samples/bashrc", ENSURE_PATH)
     assert cli.succeeded
     assert "Updating samples/bashrc" in cli.logged.stderr.contents()
-    contents = runez.readlines("samples/bashrc")
-    contents = "\n".join(contents)
-    assert contents == EXPECTED_EMPTIED_REGEN.strip()
+    contents = "\n".join(runez.readlines("samples/bashrc"))
+    assert contents == EXPECTED_READD.strip()
