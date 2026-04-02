@@ -229,7 +229,7 @@ class ShellRc:
 
 
 def main():
-    parser = argparse.ArgumentParser(prog="bookend-my-snippet", description=__doc__)
+    parser = argparse.ArgumentParser(prog="snip-stitch", description=__doc__)
     parser.add_argument("--dryrun", "-n", action="store_true", help="Perform a dryrun")
     parser.add_argument("--verbose", "-v", action="store_true", help="Be verbose")
     parser.add_argument("--force", "-f", action="store_true", help="Force update, even if not needed")

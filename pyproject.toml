@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 local_scheme = "dirty-tag"
 
 [project]
-name = "bookend-my-snippet"
+name = "snip-stitch"
 dynamic = ["version"]
 description = "Idempotently manage marked snippets inside shell-like text files"
 readme = "README.md"
@@ -49,7 +49,7 @@ dev = [
 ]
 
 [project.scripts]
-bookend-my-snippet = "bookend_my_snippet:main"
+snip-stitch = "snip_stitch:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

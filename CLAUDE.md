@@ -23,7 +23,7 @@ uvx --with tox-uv tox -e typecheck
 
 ## Architecture
 
-The entire implementation lives in a single file: `bookend_my_snippet.py`. No external runtime dependencies.
+The entire implementation lives in a single file: `snip_stitch.py`. No external runtime dependencies.
 
 **`ShellRc`** is the core class. Given a `tag`, `target_path`, and `snippet_contents`, it:
 1. Reads the existing target file

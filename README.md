@@ -1,4 +1,4 @@
-# bookend-my-snippet
+# snip-stitch
 
 Idempotently add, update, or remove managed snippets inside shell-like text files.
 Snip-stitch managed blocks into config files
@@ -39,7 +39,7 @@ end_comment = ""
 [a-z][a-z0-9._-]{2,31}
 ```
 
-`bookend-my-snippet` is a tiny CLI for installers, dotfiles, and automation that need to own a
+`snip-stitch` is a tiny CLI for installers, dotfiles, and automation that need to own a
 small section of a file without clobbering the rest of it.
 
 Think:
@@ -57,7 +57,7 @@ that section and leave everything else alone.
 
 Appending lines blindly is easy to write and awkward to undo.
 
-`bookend-my-snippet` aims to be the "do one thing well" tool for managed config snippets:
+`snip-stitch` aims to be the "do one thing well" tool for managed config snippets:
 
 - idempotent updates
 - explicit ownership through markers
@@ -70,26 +70,26 @@ Appending lines blindly is easy to write and awkward to undo.
 Use a file as the source of truth:
 
 ```bash
-uvx bookend-my-snippet with-content ~/.bashrc sdkman-init.sh
+uvx snip-stitch with-content ~/.bashrc sdkman-init.sh
 ```
 
 Inject a one-liner snippet directly:
 
 ```bash
-uvx bookend-my-snippet --tag rustup by-text ~/.profile \
+uvx snip-stitch --tag rustup by-text ~/.profile \
   '[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"'
 ```
 
 Evaluate a command and inject its stdout:
 
 ```bash
-uvx bookend-my-snippet from-output ~/.zprofile brew-shellenv.zsh
+uvx snip-stitch from-output ~/.zprofile brew-shellenv.zsh
 ```
 
 Remove a section the tool previously managed:
 
 ```bash
-uvx bookend-my-snippet --tag sdkman remove ~/.bashrc
+uvx snip-stitch --tag sdkman remove ~/.bashrc
 ```
 
 ## What It Manages
@@ -97,7 +97,7 @@ uvx bookend-my-snippet --tag sdkman remove ~/.bashrc
 Given this command:
 
 ```bash
-uvx bookend-my-snippet --tag nvm ~/.zshrc file:nvm-profile.zsh
+uvx snip-stitch --tag nvm ~/.zshrc file:nvm-profile.zsh
 ```
 
 The file will end up containing a block like this:
@@ -135,7 +135,7 @@ This project is intended to be boring in the best possible way:
 ## Command Line
 
 ```text
-bookend-my-snippet [options] TARGET SOURCE
+snip-stitch [options] TARGET SOURCE
 ```
 
 Key options:
@@ -154,5 +154,5 @@ Key options:
 Intended for ad-hoc use (but can be used as a library too):
 
 ```bash
-uvx bookend-my-snippet --help
+uvx snip-stitch --help
 ```
